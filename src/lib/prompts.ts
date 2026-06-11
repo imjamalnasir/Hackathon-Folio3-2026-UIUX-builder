@@ -55,39 +55,36 @@ Return JSON with this exact shape:
 }
 Keep hierarchy to 2-3 levels max.`;
 
-export const WIREFRAME_SYSTEM = `You are a UI designer creating wireframe JSON schemas.
+export const WIREFRAME_SYSTEM = `You are a senior UI/UX designer creating detailed wireframe JSON schemas.
 
-STRICT RULES — violating any of these will break the app:
+STRICT ENUM RULES — use ONLY these exact values:
 
-1. Page "layout" MUST be exactly one of: "default" | "sidebar" | "centered" | "dashboard"
-   - "default"    = standard top-nav + content
-   - "sidebar"    = left sidebar + main content
-   - "centered"   = narrow centered column (forms, auth)
-   - "dashboard"  = sidebar + header + content grid
+Page "layout": "default" | "sidebar" | "centered" | "dashboard"
+Section "layout": "row" | "column" | "grid" | "full"
+Component "type": "navbar" | "hero" | "card" | "form" | "table" | "cta" | "sidebar" | "footer" | "text" | "image" | "list" | "stats"
 
-2. Section "layout" MUST be exactly one of: "row" | "column" | "grid" | "full"
-   - "row"    = horizontal flex
-   - "column" = vertical flex
-   - "grid"   = multi-column grid
-   - "full"   = single full-width block
+CONTENT RULES:
+- Create exactly 3 pages
+- Each page must have 4-6 sections
+- Each section must have 2-6 components
+- Use "props" to add REAL content: headlines, field names, column headers, menu items, stat values, button labels
+- Every component must have a descriptive "label" that reflects actual content (not generic names)
 
-3. Component "type" MUST be exactly one of:
-   "navbar" | "hero" | "card" | "form" | "table" | "cta" | "sidebar" | "footer" | "text" | "image" | "list" | "stats"
-   - navbar  = top navigation bar
-   - hero    = large header/banner section
-   - card    = content card
-   - form    = input form
-   - table   = data table
-   - cta     = call-to-action button/banner
-   - sidebar = side navigation panel
-   - footer  = page footer
-   - text    = text block/paragraph
-   - image   = image placeholder
-   - list    = bullet/item list
-   - stats   = metrics/numbers display
+PROPS EXAMPLES (use these patterns):
+- navbar:  { "logo": "AppName", "links": ["Features", "Pricing", "About", "Sign In"], "cta": "Get Started" }
+- hero:    { "headline": "Actual headline text", "subheadline": "Supporting text", "primaryCta": "Button label", "secondaryCta": "Secondary button" }
+- stats:   { "items": ["1,200 Users", "98% Uptime", "4.9 Rating", "50 Integrations"] }
+- form:    { "title": "Form title", "fields": ["Full Name", "Email Address", "Password", "Company"], "submit": "Submit button label" }
+- table:   { "title": "Table title", "columns": ["Col 1", "Col 2", "Col 3", "Status", "Actions"] }
+- card:    { "title": "Card title", "description": "Brief description", "tag": "Category", "action": "Button text" }
+- list:    { "title": "List title", "items": ["Item one", "Item two", "Item three", "Item four"] }
+- sidebar: { "logo": "AppName", "items": ["Dashboard", "Projects", "Analytics", "Settings", "Help"] }
+- cta:     { "headline": "CTA headline", "description": "Supporting text", "button": "Action label" }
+- footer:  { "brand": "AppName", "links": ["Privacy", "Terms", "Contact", "Blog"], "copy": "© 2025 AppName" }
+- text:    { "heading": "Section heading", "body": "Descriptive paragraph text about this section" }
+- image:   { "caption": "Image description", "alt": "Alt text" }
 
-4. All "id" fields must be unique strings (e.g. "page-1", "section-1-1", "comp-1-1-1")
-5. Create exactly 2-3 pages. Keep each page to 2-4 sections. Keep each section to 2-5 components.
+All "id" fields must be unique. Pattern: "p1", "p1-s1", "p1-s1-c1"
 
 Return JSON with this exact shape:
 {
@@ -95,18 +92,18 @@ Return JSON with this exact shape:
   "description": "string",
   "pages": [
     {
-      "id": "page-1",
-      "title": "string",
+      "id": "p1",
+      "title": "Page Title",
       "path": "/path",
       "layout": "default",
       "sections": [
         {
-          "id": "section-1-1",
-          "title": "string",
+          "id": "p1-s1",
+          "title": "Section Name",
           "layout": "full",
           "components": [
-            { "id": "comp-1-1-1", "type": "navbar", "label": "Main Navigation" },
-            { "id": "comp-1-1-2", "type": "hero", "label": "Welcome Banner" }
+            { "id": "p1-s1-c1", "type": "navbar", "label": "Main Navigation", "props": { "logo": "Brand", "links": ["Home","Features","Pricing"], "cta": "Sign Up" } },
+            { "id": "p1-s1-c2", "type": "hero", "label": "Hero Section", "props": { "headline": "Your main value prop", "subheadline": "Supporting message", "primaryCta": "Get Started Free" } }
           ]
         }
       ]
