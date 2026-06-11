@@ -1,3 +1,14 @@
+export interface ProjectRequirements {
+  projectName: string;
+  projectType: string;
+  targetAudience: string;
+  problemStatement: string;
+  coreFeatures: string[];
+  successMetrics: string[];
+  constraints: string[];
+  businessGoals: string[];
+}
+
 export interface ResearchInsights {
   painPoints: string[];
   goals: string[];
@@ -94,6 +105,7 @@ export interface Wireframe {
 
 export type WorkflowStep =
   | "home"
+  | "requirements"
   | "research"
   | "persona"
   | "flow"
@@ -103,6 +115,7 @@ export type WorkflowStep =
 export interface ProjectState {
   transcript: string;
   productContext: string;
+  requirements: ProjectRequirements | null;
   research: ResearchInsights | null;
   persona: Persona | null;
   flow: UserFlow | null;

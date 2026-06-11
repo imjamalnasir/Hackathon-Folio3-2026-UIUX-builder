@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import type { WorkflowStep } from "@/lib/types";
 
 const STEPS: { id: WorkflowStep; label: string }[] = [
+  { id: "requirements", label: "Requirements" },
   { id: "research", label: "Research" },
   { id: "persona", label: "Persona" },
   { id: "flow", label: "User Flow" },

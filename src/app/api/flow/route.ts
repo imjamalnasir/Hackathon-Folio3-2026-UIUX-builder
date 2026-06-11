@@ -5,17 +5,20 @@ import { userFlowSchema } from "@/lib/schemas";
 
 export async function POST(request: NextRequest) {
   try {
-    const { persona, research, productContext } = await request.json();
+    const { persona, research, productContext, requirements } = await request.json();
 
     if (!persona) {
       return NextResponse.json({ error: "Persona is required" }, { status: 400 });
     }
 
     const context = productContext ? `\nProduct context: ${productContext}` : "";
+    const reqContext = requirements
+      ? `\nProject requirements:\n${JSON.stringify(requirements, null, 2)}`
+      : "";
 
     const result = await generateStructuredJson(
       FLOW_SYSTEM,
-      `Create a user flow for this persona. Maximum 6-8 nodes.${context}\n\nPersona:\n${JSON.stringify(persona, null, 2)}\n\nResearch:\n${JSON.stringify(research, null, 2)}`,
+      `Create a user flow for this persona. Maximum 6-8 nodes.${context}${reqContext}\n\nPersona:\n${JSON.stringify(persona, null, 2)}\n\nResearch:\n${JSON.stringify(research, null, 2)}`,
       userFlowSchema
     );
 

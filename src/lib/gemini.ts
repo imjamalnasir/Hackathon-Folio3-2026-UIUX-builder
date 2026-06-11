@@ -1,14 +1,14 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { z } from "zod";
 
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+const MODEL = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
 
-function getApiKey() {
-  const apiKey = process.env.GEMINI_API_KEY;
+function getClient() {
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not configured");
+    throw new Error("GROQ_API_KEY is not configured");
   }
-  return apiKey;
+  return new Groq({ apiKey });
 }
 
 function extractJson(text: string): string {
@@ -36,30 +36,32 @@ export async function generateStructuredJson<T>(
   schema: z.ZodType<T>,
   maxRetries = 2
 ): Promise<T> {
-  const genAI = new GoogleGenerativeAI(getApiKey());
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: `${systemPrompt}\n\nYou MUST respond with ONLY valid JSON. No markdown, no explanations, no code fences.`,
-    generationConfig: {
-      responseMimeType: "application/json",
-      maxOutputTokens: 4096,
-    },
-  });
-
+  const client = getClient();
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const prompt =
-        attempt > 0
-          ? `${userPrompt}\n\nPrevious response was invalid JSON. Return ONLY valid JSON matching the schema.`
+        attempt > 0 && lastError
+          ? `${userPrompt}\n\nYour previous response failed validation with this error:\n${lastError.message}\n\nFix the error and return ONLY valid JSON. Double-check every enum value matches the allowed values exactly.`
           : userPrompt;
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      const completion = await client.chat.completions.create({
+        model: MODEL,
+        messages: [
+          {
+            role: "system",
+            content: `${systemPrompt}\n\nYou MUST respond with ONLY valid JSON. No markdown, no explanations, no code fences.`,
+          },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 8000,
+      });
 
+      const text = completion.choices[0]?.message?.content;
       if (!text) {
-        throw new Error("No text response from Gemini");
+        throw new Error("No text response from Groq");
       }
 
       const raw = extractJson(text);

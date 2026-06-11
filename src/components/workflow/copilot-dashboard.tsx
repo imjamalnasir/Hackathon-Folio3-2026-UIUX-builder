@@ -17,10 +17,15 @@ import {
   AlertCircle,
   Lightbulb,
   Activity,
+  ClipboardList,
+  CheckCircle2,
+  TrendingUp,
+  ShieldAlert,
 } from "lucide-react";
 import type {
   WorkflowStep,
   ProjectState,
+  ProjectRequirements,
   ResearchInsights,
   Persona,
   UserFlow,
@@ -63,9 +68,33 @@ Behaviors:
 
 Key insight: Sarah doesn't need more features — she needs fewer decisions to make each day. The product should surface what matters and hide what doesn't.`;
 
+const SAMPLE_REQUIREMENTS = `Project: Smart Task Prioritization App
+
+We are building a mobile-first productivity app for busy professionals who struggle with overwhelming task lists. The app should help users automatically prioritize tasks based on deadlines, importance, and energy levels throughout the day.
+
+Target users: Knowledge workers aged 25-45 who manage 20+ tasks daily across multiple projects.
+
+Core features needed:
+- AI-powered task prioritization engine
+- Time-blocking calendar integration
+- Energy level tracking (morning/afternoon/evening modes)
+- Team collaboration and delegation
+- Daily/weekly progress reports
+
+Business goals:
+- Reach 50,000 MAU within 12 months
+- Achieve 4.5+ app store rating
+- Target B2B sales to companies with 50-500 employees
+
+Constraints:
+- Must work offline
+- GDPR compliant data storage
+- Launch on iOS first, Android in Q2`;
+
 const initialState: ProjectState = {
   transcript: "",
   productContext: "",
+  requirements: null,
   research: null,
   persona: null,
   flow: null,
@@ -87,22 +116,41 @@ async function callApi<T>(endpoint: string, body: Record<string, unknown>): Prom
 export function CopilotDashboard() {
   const [step, setStep] = useState<WorkflowStep>("home");
   const [state, setState] = useState<ProjectState>(initialState);
+  const [requirementInput, setRequirementInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [completedSteps, setCompletedSteps] = useState<WorkflowStep[]>([]);
 
-  const progress = (completedSteps.length / 5) * 100;
+  const progress = (completedSteps.length / 6) * 100;
 
   const markComplete = useCallback((s: WorkflowStep) => {
     setCompletedSteps((prev) => (prev.includes(s) ? prev : [...prev, s]));
   }, []);
 
-  const handleResearch = async () => {
+  const handleRequirements = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const requirements = await callApi<ProjectRequirements>("requirements", {
+        description: requirementInput,
+      });
+      setState((s) => ({ ...s, requirements }));
+      markComplete("requirements");
+      setStep("research");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to extract requirements");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResearch = async (fromRequirements = false) => {
     setLoading(true);
     setError(null);
     try {
       const research = await callApi<ResearchInsights>("research", {
-        transcript: state.transcript,
+        transcript: fromRequirements ? undefined : state.transcript,
+        requirements: fromRequirements ? state.requirements : undefined,
       });
       setState((s) => ({ ...s, research }));
       markComplete("research");
@@ -121,6 +169,7 @@ export function CopilotDashboard() {
       const persona = await callApi<Persona>("persona", {
         research: state.research,
         productContext: state.productContext,
+        requirements: state.requirements,
       });
       setState((s) => ({ ...s, persona }));
       markComplete("persona");
@@ -140,6 +189,7 @@ export function CopilotDashboard() {
         persona: state.persona,
         research: state.research,
         productContext: state.productContext,
+        requirements: state.requirements,
       });
       setState((s) => ({ ...s, flow }));
       markComplete("flow");
@@ -179,6 +229,7 @@ export function CopilotDashboard() {
         flow: state.flow,
         persona: state.persona,
         productContext: state.productContext,
+        requirements: state.requirements,
       });
       setState((s) => ({ ...s, wireframe }));
       markComplete("wireframe");
@@ -231,7 +282,7 @@ export function CopilotDashboard() {
               <div className="hidden sm:block w-32">
                 <Progress value={progress} />
               </div>
-              {completedSteps.length === 5 && (
+              {completedSteps.length === 6 && (
                 <Button variant="outline" size="sm" onClick={downloadJson}>
                   <Download className="h-4 w-4" />
                   Export JSON
@@ -279,13 +330,14 @@ export function CopilotDashboard() {
                 Paste your UX research and let AI generate personas, user flows, sitemaps, and
                 wireframes in under 2 minutes.
               </p>
-              <Button size="lg" onClick={() => setStep("research")}>
+              <Button size="lg" onClick={() => setStep("requirements")}>
                 Start New Project
                 <ArrowRight className="h-4 w-4" />
               </Button>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 max-w-2xl mx-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-16 max-w-3xl mx-auto">
                 {[
+                  { icon: ClipboardList, label: "Requirements" },
                   { icon: User, label: "Personas" },
                   { icon: GitBranch, label: "User Flows" },
                   { icon: Map, label: "Sitemaps" },
@@ -303,6 +355,59 @@ export function CopilotDashboard() {
             </motion.div>
           )}
 
+          {step === "requirements" && (
+            <motion.div
+              key="requirements"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              {loading ? (
+                <LoadingState message="Extracting project requirements..." />
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <ClipboardList className="h-6 w-6 text-primary" />
+                      Project Requirements
+                    </h2>
+                    <p className="text-muted-foreground mt-1">
+                      Describe your project. The AI will extract structured requirements to guide persona and flow generation.
+                    </p>
+                  </div>
+
+                  <Textarea
+                    placeholder="Describe your project — what it is, who it's for, key features, business goals, and any constraints..."
+                    className="min-h-[240px] text-sm"
+                    value={requirementInput}
+                    onChange={(e) => setRequirementInput(e.target.value)}
+                  />
+
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRequirementInput(SAMPLE_REQUIREMENTS)}
+                    >
+                      Load sample requirements
+                    </Button>
+                    <Button
+                      onClick={handleRequirements}
+                      disabled={requirementInput.trim().length < 20}
+                    >
+                      Extract Requirements
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {state.requirements && (
+                    <RequirementsCard requirements={state.requirements} />
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {step === "research" && (
             <motion.div
               key="research"
@@ -317,11 +422,36 @@ export function CopilotDashboard() {
                   <div>
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                       <FileSearch className="h-6 w-6 text-primary" />
-                      Research Input
+                      Research
                     </h2>
                     <p className="text-muted-foreground mt-1">
-                      Paste interview transcripts, survey responses, or product notes.
+                      Generate research from your project requirements, or paste real interview transcripts.
                     </p>
+                  </div>
+
+                  {state.requirements && (
+                    <Card className="border-primary/30 bg-primary/5">
+                      <CardContent className="pt-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="font-semibold text-sm">Generate research from requirements</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              AI will synthesize realistic UX research insights for <span className="font-medium">{state.requirements.projectName}</span> based on your extracted requirements.
+                            </p>
+                          </div>
+                          <Button onClick={() => handleResearch(true)} className="shrink-0">
+                            <Sparkles className="h-4 w-4" />
+                            Generate Research
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <div className="relative flex items-center gap-3">
+                    <div className="flex-1 border-t border-border" />
+                    <span className="text-xs text-muted-foreground">or paste your own transcript</span>
+                    <div className="flex-1 border-t border-border" />
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -347,24 +477,27 @@ export function CopilotDashboard() {
                   </div>
 
                   <Textarea
-                    placeholder="Paste your UX research here..."
-                    className="min-h-[280px] font-mono text-sm"
+                    placeholder="Paste your UX research transcript here..."
+                    className="min-h-[220px] font-mono text-sm"
                     value={state.transcript}
                     onChange={(e) => setState((s) => ({ ...s, transcript: e.target.value }))}
                   />
 
                   <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setStep("requirements")}>
+                        <ArrowLeft className="h-4 w-4" /> Back
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setState((s) => ({ ...s, transcript: SAMPLE_TRANSCRIPT }))}
+                      >
+                        Load sample
+                      </Button>
+                    </div>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        setState((s) => ({ ...s, transcript: SAMPLE_TRANSCRIPT }))
-                      }
-                    >
-                      Load sample data
-                    </Button>
-                    <Button
-                      onClick={handleResearch}
+                      onClick={() => handleResearch(false)}
                       disabled={state.transcript.trim().length < 50}
                     >
                       Extract Insights
@@ -536,7 +669,7 @@ export function CopilotDashboard() {
                     <Button variant="outline" onClick={() => setStep("sitemap")}>
                       <ArrowLeft className="h-4 w-4" /> Back
                     </Button>
-                    <Button onClick={() => setStep("home")}>
+                    <Button onClick={() => { setState(initialState); setRequirementInput(""); setCompletedSteps([]); setStep("home"); }}>
                       Start New Project
                     </Button>
                   </div>
@@ -563,6 +696,52 @@ export function CopilotDashboard() {
         </AnimatePresence>
       </main>
     </div>
+  );
+}
+
+function RequirementsCard({ requirements }: { requirements: ProjectRequirements }) {
+  const sections = [
+    { icon: Target, label: "Core Features", items: requirements.coreFeatures, color: "text-primary" },
+    { icon: TrendingUp, label: "Business Goals", items: requirements.businessGoals, color: "text-green-600" },
+    { icon: CheckCircle2, label: "Success Metrics", items: requirements.successMetrics, color: "text-blue-600" },
+    { icon: ShieldAlert, label: "Constraints", items: requirements.constraints, color: "text-orange-600" },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle>{requirements.projectName}</CardTitle>
+            <CardDescription>{requirements.projectType} · {requirements.targetAudience}</CardDescription>
+          </div>
+          <Badge variant="outline">{requirements.projectType}</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mt-2 border-l-2 border-primary pl-3">
+          {requirements.problemStatement}
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {sections.map(({ icon: Icon, label, items, color }) => (
+            <div key={label} className="space-y-2">
+              <h4 className={`text-sm font-semibold flex items-center gap-1.5 ${color}`}>
+                <Icon className="h-4 w-4" />
+                {label}
+              </h4>
+              <ul className="space-y-1">
+                {items.map((item, i) => (
+                  <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                    <span className="mt-1.5 h-1 w-1 rounded-full bg-primary shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
