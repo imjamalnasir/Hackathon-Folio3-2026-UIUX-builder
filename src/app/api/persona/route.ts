@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateStructuredJson } from "@/lib/anthropic";
+import { generateStructuredJson } from "@/lib/gemini";
 import { PERSONA_SYSTEM } from "@/lib/prompts";
 import { personaSchema } from "@/lib/schemas";
 

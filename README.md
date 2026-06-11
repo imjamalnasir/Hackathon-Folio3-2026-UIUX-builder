@@ -1,6 +1,6 @@
 # AI UX Copilot
 
-An AI-powered Next.js application that converts UX research (interviews, notes, surveys) into structured personas, user flows, sitemaps, and wireframes using Anthropic Claude.
+An AI-powered Next.js application that converts UX research (interviews, notes, surveys) into structured personas, user flows, sitemaps, and wireframes using Google Gemini.
 
 ## Features
 
@@ -14,7 +14,7 @@ An AI-powered Next.js application that converts UX research (interviews, notes, 
 
 - Next.js 15 (App Router) + TypeScript
 - Tailwind CSS + shadcn/ui components
-- Anthropic Claude API (Sonnet)
+- Google Gemini API (gemini-2.0-flash)
 - React Flow, Framer Motion, Zod
 
 ## Getting Started
@@ -22,7 +22,7 @@ An AI-powered Next.js application that converts UX research (interviews, notes, 
 ### Prerequisites
 
 - Node.js 18+
-- Anthropic API key ([console.anthropic.com](https://console.anthropic.com))
+- Google Gemini API key ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 
 ### Setup
 
@@ -32,7 +32,7 @@ npm install
 
 # Configure environment
 cp .env.example .env.local
-# Add your ANTHROPIC_API_KEY to .env.local
+# Add your GEMINI_API_KEY to .env.local
 
 # Run development server
 npm run dev
@@ -61,7 +61,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Description |
 |----------|-------------|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key |
+| `GEMINI_API_KEY` | Your Google Gemini API key |
 
 ## License
 

@@ -1,14 +1,14 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from "zod";
 
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
-function getClient() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+function getApiKey() {
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY is not configured");
+    throw new Error("GEMINI_API_KEY is not configured");
   }
-  return new Anthropic({ apiKey });
+  return apiKey;
 }
 
 function extractJson(text: string): string {
@@ -36,33 +36,33 @@ export async function generateStructuredJson<T>(
   schema: z.ZodType<T>,
   maxRetries = 2
 ): Promise<T> {
-  const client = getClient();
+  const genAI = new GoogleGenerativeAI(getApiKey());
+  const model = genAI.getGenerativeModel({
+    model: MODEL,
+    systemInstruction: `${systemPrompt}\n\nYou MUST respond with ONLY valid JSON. No markdown, no explanations, no code fences.`,
+    generationConfig: {
+      responseMimeType: "application/json",
+      maxOutputTokens: 4096,
+    },
+  });
 
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const response = await client.messages.create({
-        model: MODEL,
-        max_tokens: 4096,
-        system: `${systemPrompt}\n\nYou MUST respond with ONLY valid JSON. No markdown, no explanations, no code fences.`,
-        messages: [
-          {
-            role: "user",
-            content:
-              attempt > 0
-                ? `${userPrompt}\n\nPrevious response was invalid JSON. Return ONLY valid JSON matching the schema.`
-                : userPrompt,
-          },
-        ],
-      });
+      const prompt =
+        attempt > 0
+          ? `${userPrompt}\n\nPrevious response was invalid JSON. Return ONLY valid JSON matching the schema.`
+          : userPrompt;
 
-      const textBlock = response.content.find((block) => block.type === "text");
-      if (!textBlock || textBlock.type !== "text") {
-        throw new Error("No text response from Claude");
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+
+      if (!text) {
+        throw new Error("No text response from Gemini");
       }
 
-      const raw = extractJson(textBlock.text);
+      const raw = extractJson(text);
       const parsed = JSON.parse(raw);
       return schema.parse(parsed);
     } catch (error) {

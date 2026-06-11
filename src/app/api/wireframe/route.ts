@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateStructuredJson } from "@/lib/anthropic";
+import { generateStructuredJson } from "@/lib/gemini";
 import { WIREFRAME_SYSTEM } from "@/lib/prompts";
 import { wireframeSchema } from "@/lib/schemas";
 

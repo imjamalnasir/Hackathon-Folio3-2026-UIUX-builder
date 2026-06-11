@@ -311,7 +311,7 @@ export function CopilotDashboard() {
               exit={{ opacity: 0, y: -20 }}
             >
               {loading ? (
-                <LoadingState message="Analyzing research insights with Claude..." />
+                <LoadingState message="Analyzing research insights with Gemini..." />
               ) : (
                 <div className="space-y-6">
                   <div>
